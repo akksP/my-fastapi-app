@@ -9,27 +9,33 @@
 </head>
 <body>
     <div id="app">
-        <div class="balance-container">
-            <h1>💰 Баланс: <span id="balance">0</span> $VRU</h1>
-        </div>
-        <button id="click-btn">+1 $VRU</button>
+        <h1>💰 Баланс: <span id="balance">0</span></h1>
+        <button id="click-btn">Клик (+1)</button>
         <button id="upgrade-btn">Улучшить (10 монет)</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand();  // Растягиваем Web App
 
         let user_id = tg.initDataUnsafe.user?.id || "test_user";
         let balance = 0;
         let perClick = 1;
 
         async function loadData() {
-            let response = await fetch(`http://127.0.0.1:8000/get_balance/?user_id=${user_id}`);
-            let data = await response.json();
-            balance = data.balance;
-            perClick = data.per_click;
-            document.getElementById("balance").textContent = balance;
+            try {
+                let response = await fetch(`https://my-fastapi-app-bpr5.onrender.com/get_balance/?user_id=${user_id}`);
+                if (response.ok) {
+                    let data = await response.json();
+                    balance = data.balance;
+                    perClick = data.per_click;
+                    document.getElementById("balance").textContent = balance;
+                } else {
+                    console.error("Ошибка при получении данных:", response.status);
+                }
+            } catch (error) {
+                console.error("Ошибка сети:", error);
+            }
         }
 
         document.getElementById("click-btn").addEventListener("click", () => {
@@ -42,11 +48,15 @@
                 balance -= 10;
                 perClick++;
                 document.getElementById("balance").textContent = balance;
-                await fetch("http://127.0.0.1:8000/update_balance/", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user_id, balance, per_click: perClick })
-                });
+                try {
+                    await fetch("https://my-fastapi-app-bpr5.onrender.com/update_balance/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id, balance, per_click: perClick })
+                    });
+                } catch (error) {
+                    console.error("Ошибка при обновлении баланса:", error);
+                }
             } else {
                 alert("Не хватает монет!");
             }

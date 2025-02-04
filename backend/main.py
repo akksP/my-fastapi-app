@@ -11,7 +11,7 @@ mini_app_url = "https://my-fastapi-app-bpr5.onrender.com"  # URL вашего м
 async def start(update, context):
     # Создаем кнопку, которая откроет Mini App в Telegram
     keyboard = [
-        [InlineKeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=mini_app_url))]
+        [InlineKeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=mini_app_url))]  # Используем WebAppInfo
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
