@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <div class="balance-container">
+            <h1>💰 Баланс: <span id="balance">0</span> $VRU</h1>
+        </div>
+        <button id="click-btn">+1 $VRU</button>
+        <button id="upgrade-btn">Улучшить (10 монет)</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let user_id = tg.initDataUnsafe.user?.id || "test_user";
+        let balance = 0;
+        let perClick = 1;
+
+        async function loadData() {
+            let response = await fetch(`http://127.0.0.1:8000/get_balance/?user_id=${user_id}`);
+            let data = await response.json();
+            balance = data.balance;
+            perClick = data.per_click;
+            document.getElementById("balance").textContent = balance;
+        }
+
+        document.getElementById("click-btn").addEventListener("click", () => {
+            balance += perClick;
+            document.getElementById("balance").textContent = balance;
+        });
+
+        document.getElementById("upgrade-btn").addEventListener("click", async () => {
+            if (balance >= 10) {
+                balance -= 10;
+                perClick++;
+                document.getElementById("balance").textContent = balance;
+                await fetch("http://127.0.0.1:8000/update_balance/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id, balance, per_click: perClick })
+                });
+            } else {
+                alert("Не хватает монет!");
+            }
+        });
+
+        loadData();
+    </script>
+</body>
+</html>

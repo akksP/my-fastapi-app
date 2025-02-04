@@ -1,37 +1,38 @@
-from fastapi import FastAPI, Request
-import sqlite3
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler
 
-app = FastAPI()
+# Замените на свой токен, полученный от BotFather
+bot_token = "7319162102:AAEpW1IpILjukNF0fmQOHSXl7HsfR9DmItI"
 
-# Подключение к базе данных
-conn = sqlite3.connect("game.db", check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, balance INTEGER, per_click INTEGER)")
-conn.commit()
+# URL для Mini App (замените на URL вашего мини-приложения)
+mini_app_url = "https://my-fastapi-app-bpr5.onrender.com"  # URL вашего мини-приложения
 
-def get_user(user_id):
-    cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
-    user = cursor.fetchone()
-    if not user:
-        cursor.execute("INSERT INTO users (id, balance, per_click) VALUES (?, ?, ?)", (user_id, 0, 1))
-        conn.commit()
-        return (user_id, 0, 1)
-    return user
+# Функция обработки команды /start
+async def start(update, context):
+    # Создаем кнопку, которая откроет Mini App в Telegram
+    keyboard = [
+        [InlineKeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=mini_app_url))]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-@app.get("/get_balance/")
-async def get_balance(user_id: str):
-    user = get_user(user_id)
-    return {"balance": user[1], "per_click": user[2]}
+    # Отправляем приветственное сообщение с кнопкой
+    await update.message.reply_text(
+        text="Добро пожаловать! Нажмите кнопку ниже, чтобы открыть Mini App.",
+        reply_markup=reply_markup
+    )
 
-@app.post("/update_balance/")
-async def update_balance(request: Request):
-    data = await request.json()
-    user_id, balance, per_click = data["user_id"], data["balance"], data["per_click"]
-    cursor.execute("UPDATE users SET balance=?, per_click=? WHERE id=?", (balance, per_click, user_id))
-    conn.commit()
-    return {"status": "ok"}
+# Функция для обработки команды /help
+async def help_command(update, context):
+    await update.message.reply_text("Напишите /start для начала!")
 
-# Запуск сервера
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+# Создаем приложение и передаем токен
+application = Application.builder().token(bot_token).build()
+
+# Добавляем обработчик для команды /start
+application.add_handler(CommandHandler('start', start))
+
+# Добавляем обработчик для команды /help
+application.add_handler(CommandHandler('help', help_command))
+
+# Запускаем бота
+application.run_polling()
